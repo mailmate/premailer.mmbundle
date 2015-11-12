@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>contactEmailRot13</key>
+	<string>zz-ohaqyrf@sereba.pbz</string>
+	<key>contactName</key>
+	<string>Benny Kjær Nielsen</string>
+	<key>description</key>
+	<string>Inlining of CSS for HTML.</string>
+	<key>name</key>
+	<string>Premailer (Python)</string>
+	<key>uuid</key>
+	<string>864AF8B2-C139-4926-8BCD-716209D76CD5</string>
+</dict>
+</plist>

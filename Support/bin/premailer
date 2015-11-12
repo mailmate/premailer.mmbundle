@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# ToDo:
+# - Consider all options: python -m premailer --help
+# - Reconsider '--remove-classes'
+
+cd "${MM_BUNDLE_SUPPORT}/vendor"
+
+export PYTHONIOENCODING=utf-8
+python -m premailer --remove-classes --strip-important --disable-validation
