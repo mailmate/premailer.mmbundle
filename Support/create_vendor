@@ -1,11 +1,19 @@
 # This file shows how the vendor folder has been created.
 # In theory, it can be executed, but it's very fragile. It could easily
-# break if any of the involved parts are changed (or not on 10.11).
+# break if any of the involved parts are changed (or not compiling on 10.11).
+# Note the explicit versions of libxml2 and libxslt further below.
 
 # Cleanup
 # sudo rm -r cssselect cssutils lxml premailer vendor
 
 mkdir vendor
+
+# requests
+# https://github.com/kennethreitz/requests
+git clone https://github.com/kennethreitz/requests.git
+(cd requests; python setup.py build)
+mv requests/build/lib/requests vendor/
+cp requests/LICENSE vendor/requests-license.txt
 
 # cssutils/encutils
 # https://bitbucket.org/cthedot/cssutils
@@ -25,9 +33,20 @@ cp cssselect/LICENSE vendor/cssselect-license.txt
 
 # lxml
 # https://github.com/lxml/
+# Note: Currently need explicit dependencies since otherwise the build script won't fetch and compile them.
+#  These need to be manually updated to the latest releases...
+LIBXML_VERSION=2.9.3
+LIBXSLT_VERSION=1.1.28
 git clone https://github.com/lxml/lxml.git
+# If needed, this can be used to manually fetch the dependencies, but `setup.py` should do it automatically.
+# cd lxml
+# mkdir libs
+# cd libs
+# wget http://xmlsoft.org/sources/libxml2-${LXML_VERSION}.tar.gz
+# wget http://xmlsoft.org/sources/libxslt-${LIBXSLT_VERSION}.tar.gz
+# cd ..
 sudo pip install cython
-(cd lxml; ARCHFLAGS="-arch x86_64" python setup.py build)
+(cd lxml; ARCHFLAGS="-arch x86_64" python setup.py build --static-deps --libxml2-version=${LIBXML_VERSION} --libxslt-version=${LIBXSLT_VERSION})
 mv lxml/build/lib.macosx-10.11-intel-2.7/lxml vendor/
 cp lxml/LICENSES.txt vendor/lxml-license.txt
 
