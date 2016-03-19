@@ -1,8 +1,5 @@
 from __future__ import absolute_import, unicode_literals, print_function
-from io import BytesIO  # Yes, there is an io module in Python 2
-import cgi
 import codecs
-import gzip
 import operator
 import os
 import re
@@ -16,7 +13,6 @@ import sys
 if sys.version_info >= (3,):  # pragma: no cover
     # As in, Python 3
     from io import StringIO
-    from urllib.request import urlopen
     from urllib.parse import urljoin, urlparse
     STR_TYPE = str
 else:  # Python 2
@@ -25,11 +21,11 @@ else:  # Python 2
     except ImportError:  # pragma: no cover
         from StringIO import StringIO
         StringIO = StringIO  # shut up pyflakes
-    from urllib2 import urlopen
     from urlparse import urljoin, urlparse
-    STR_TYPE = basestring
+    STR_TYPE = basestring  # NOQA
 
 import cssutils
+import requests
 from lxml import etree
 from lxml.cssselect import CSSSelector
 from premailer.merge_style import merge_styles, csstext_to_pairs
@@ -85,9 +81,31 @@ def _cache_parse_css_string(css_body, validate=True):
     """
     return cssutils.parseString(css_body, validate=validate)
 
+
+def capitalize_float_margin(css_body):
+    """Capitalize float and margin CSS property names
+    """
+    def _capitalize_property(match):
+        return '{0}:{1}{2}'.format(
+            match.group('property').capitalize(),
+            match.group('value'),
+            match.group('terminator'))
+
+    return _lowercase_margin_float_rule.sub(_capitalize_property, css_body)
+
+
 _element_selector_regex = re.compile(r'(^|\s)\w')
 _cdata_regex = re.compile(r'\<\!\[CDATA\[(.*?)\]\]\>', re.DOTALL)
+_lowercase_margin_float_rule = re.compile(
+    r'''(?P<property>margin(-(top|bottom|left|right))?|float)
+        :
+        (?P<value>.*?)
+        (?P<terminator>$|;)''',
+    re.IGNORECASE | re.VERBOSE)
 _importants = re.compile('\s*!important')
+#: The short (3-digit) color codes that cause issues for IBM Notes
+_short_color_codes = re.compile(r'^#([0-9a-f])([0-9a-f])([0-9a-f])$', re.I)
+
 # These selectors don't apply to all elements. Rather, they specify
 # which elements to apply to.
 FILTER_PSEUDOSELECTORS = [':last-child', ':first-child', 'nth-child']
@@ -104,6 +122,7 @@ class Premailer(object):
                  keep_style_tags=False,
                  include_star_selectors=False,
                  remove_classes=True,
+                 capitalize_float_margin=False,
                  strip_important=True,
                  external_styles=None,
                  css_text=None,
@@ -126,6 +145,7 @@ class Premailer(object):
         # this will always preserve the original css
         self.keep_style_tags = keep_style_tags
         self.remove_classes = remove_classes
+        self.capitalize_float_margin = capitalize_float_margin
         # whether to process or ignore selectors like '* { foo:bar; }'
         self.include_star_selectors = include_star_selectors
         if isinstance(external_styles, STR_TYPE):
@@ -420,6 +440,14 @@ class Premailer(object):
                 parent = item.getparent()
                 del parent.attrib['class']
 
+        # Capitalize Margin properties
+        # To fix weird outlook bug
+        # https://www.emailonacid.com/blog/article/email-development/outlook.com-does-support-margins
+        if self.capitalize_float_margin:
+            for item in page.xpath('//@style'):
+                mangled = capitalize_float_margin(item)
+                item.getparent().attrib['style'] = mangled
+
         # Add align attributes to images if they have a CSS float value of
         # right or left. Outlook (both on desktop and on the web) are bad at
         # understanding floats, but they do understand the HTML align attrib.
@@ -470,16 +498,7 @@ class Premailer(object):
             return out
 
     def _load_external_url(self, url):
-        r = urlopen(url)
-        _, params = cgi.parse_header(r.headers.get('Content-Type', ''))
-        encoding = params.get('charset', 'utf-8')
-        if 'gzip' in r.info().get('Content-Encoding', ''):
-            buf = BytesIO(r.read())
-            f = gzip.GzipFile(fileobj=buf)
-            out = f.read().decode(encoding)
-        else:
-            out = r.read().decode(encoding)
-        return out
+        return requests.get(url).text
 
     def _load_external(self, url):
         """loads an external stylesheet from a remote url or local path
@@ -510,6 +529,17 @@ class Premailer(object):
 
         return css_body
 
+    @staticmethod
+    def six_color(color_value):
+        """Fix background colors for Lotus Notes
+
+        Notes which fails to handle three character ``bgcolor`` codes well.
+        see <https://github.com/peterbe/premailer/issues/114>"""
+
+        # Turn the color code from three to six digits
+        retval = _short_color_codes.sub(r'#\1\1\2\2\3\3', color_value)
+        return retval
+
     def _style_to_basic_html_attributes(self, element, style_content,
                                         force=False):
         """given an element and styles like
@@ -534,8 +564,15 @@ class Premailer(object):
                 attributes['align'] = value.strip()
             elif key == 'vertical-align':
                 attributes['valign'] = value.strip()
-            elif key == 'background-color':
-                attributes['bgcolor'] = value.strip()
+            elif (
+                key == 'background-color' and
+                'transparent' not in value.lower()
+            ):
+                # Only add the 'bgcolor' attribute if the value does not
+                # contain the word "transparent"; before we add it possibly
+                # correct the 3-digit color code to its 6-digit equivalent
+                # ("abc" to "aabbcc") so IBM Notes copes.
+                attributes['bgcolor'] = self.six_color(value.strip())
             elif key == 'width' or key == 'height':
                 value = value.strip()
                 if value.endswith('px'):
@@ -613,4 +650,4 @@ if __name__ == '__main__':  # pragma: no cover
         </body>
         </html>"""
     p = Premailer(html)
-    print (p.transform())
+    print(p.transform())
