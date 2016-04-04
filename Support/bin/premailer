@@ -4,7 +4,13 @@
 # - Consider all options: python -m premailer --help
 # - Reconsider '--remove-classes'
 
-cd "${MM_BUNDLE_SUPPORT}/vendor"
+TMPFILE=$(mktemp -t premailer_data) || exit 1
+# The `sed` command removes `<o:p></o:p>` which appears to not work well with `premailer`.
+#  These tags are described here: http://stackoverflow.com/questions/7808968/what-do-op-elements-do-anyway
+cat | sed -e 's,</?o:[^>]*>,,g' >${TMPFILE}
 
+cd "${MM_BUNDLE_SUPPORT}/vendor"
 export PYTHONIOENCODING=utf-8
-python -m premailer --remove-classes --strip-important --disable-validation
+if ! (cat ${TMPFILE} | python -m premailer --remove-classes --strip-important --disable-validation) ; then
+	cat ${TMPFILE} | tidy --quiet yes --wrap 0 --input-encoding utf8 --output-encoding utf8 --force-output 1 --show-warnings no | python -m premailer --remove-classes --strip-important --disable-validation
+fi
