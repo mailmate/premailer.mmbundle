@@ -1,0 +1,29 @@
+#!/usr/bin/python2.7
+
+import sys
+import os
+sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'vendor'))
+
+from premailer.premailer import Premailer
+
+html = sys.stdin.read()
+if hasattr(html, 'decode'):  # Forgive me: Python 2 compatability
+    html = html.decode('utf-8')
+
+p = Premailer(
+    html=html,
+    # base_url=options.base_url,
+    # preserve_internal_links=options.preserve_internal_links,
+    # exclude_pseudoclasses=options.exclude_pseudoclasses,
+    # keep_style_tags=options.keep_style_tags,
+    # include_star_selectors=options.include_star_selectors,
+    remove_classes=1,
+    strip_important=1,
+    # external_styles=options.external_styles,
+    # css_text=options.css_text,
+    # method=options.method,
+    # base_path=options.base_path,
+    # disable_basic_attributes=options.disable_basic_attributes,
+    disable_validation=1
+)
+sys.stdout.write(p.transform(pretty_print=0))

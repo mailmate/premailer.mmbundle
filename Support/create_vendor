@@ -8,6 +8,38 @@
 
 mkdir vendor
 
+# chardet
+# https://github.com/chardet/chardet
+git clone https://github.com/chardet/chardet.git
+(cd chardet; python setup.py build)
+mv chardet/build/lib/chardet vendor/
+cp chardet/LICENSE vendor/chardet-license.txt
+
+# certifi
+git clone https://github.com/certifi/python-certifi.git
+(cd python-certifi; python setup.py build)
+mv python-certifi/build/lib/certifi vendor/
+cp python-certifi/LICENSE vendor/python-certifi-license.txt
+
+# idna
+git clone https://github.com/kjd/idna.git
+(cd idna; python setup.py build)
+mv idna/build/lib/idna vendor/
+cp idna/LICENSE.rst vendor/idna-license.txt
+
+# cachetools
+git clone https://github.com/tkem/cachetools.git
+(cd cachetools; python setup.py build)
+mv cachetools/build/lib/cachetools vendor/
+cp cachetools/LICENSE vendor/cachetools-license.txt
+
+# urllib3
+# https://github.com/urllib3/urllib3
+git clone https://github.com/urllib3/urllib3.git
+(cd urllib3; python setup.py build)
+mv urllib3/build/lib/urllib3 vendor/
+cp urllib3/LICENSE.txt vendor/urllib3-license.txt
+
 # requests
 # https://github.com/kennethreitz/requests
 git clone https://github.com/kennethreitz/requests.git
@@ -35,18 +67,22 @@ cp cssselect/LICENSE vendor/cssselect-license.txt
 # https://github.com/lxml/
 # Note: Currently need explicit dependencies since otherwise the build script won't fetch and compile them.
 #  These need to be manually updated to the latest releases...
-LIBXML_VERSION=2.9.3
-LIBXSLT_VERSION=1.1.28
+LIBXML_VERSION=2.9.7
+LIBXSLT_VERSION=1.1.30
 git clone https://github.com/lxml/lxml.git
 # If needed, this can be used to manually fetch the dependencies, but `setup.py` should do it automatically.
 # cd lxml
 # mkdir libs
 # cd libs
-# wget http://xmlsoft.org/sources/libxml2-${LXML_VERSION}.tar.gz
+# wget http://xmlsoft.org/sources/libxml2-${LIBXML_VERSION}.tar.gz
 # wget http://xmlsoft.org/sources/libxslt-${LIBXSLT_VERSION}.tar.gz
 # cd ..
+brew install python@2
 sudo pip install cython
-(cd lxml; ARCHFLAGS="-arch x86_64" python setup.py build --static-deps --libxml2-version=${LIBXML_VERSION} --libxslt-version=${LIBXSLT_VERSION})
+export PYTHONPATH=/usr/local/lib/python2.7/site-packages
+mv lxml/buildlibxml.py lxml/buildlibxml.py_original
+sed 's/-arch i386 //g' lxml/buildlibxml.py_original > lxml/buildlibxml.py
+(cd lxml; python setup.py build --static-deps --libxml2-version=${LIBXML_VERSION} --libxslt-version=${LIBXSLT_VERSION})
 mv lxml/build/lib.macosx-10.11-intel-2.7/lxml vendor/
 cp lxml/LICENSES.txt vendor/lxml-license.txt
 

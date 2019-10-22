@@ -166,7 +166,7 @@ class CSSPageRule(cssrule.CSSRuleRules):
                                         u'IDENT but found: %r' % ival, token)
                     else:                        
                         if not ival in (u'first', u'left', u'right'):
-                            self._log.warn(u'CSSPageRule: Unknown @page '
+                            self._log.warning(u'CSSPageRule: Unknown @page '
                                            u'selector: %r' 
                                            % (u':'+ival,), neverraise=True)
                         if ival == u'first':

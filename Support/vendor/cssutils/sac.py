@@ -41,7 +41,7 @@ class ErrorHandler(object):
         self._log.fatal(exception, token)
 
     def warn(self, exception, token=None):
-        self._log.warn(exception, token, neverraise=True)
+        self._log.warning(exception, token, neverraise=True)
 
      
 class DocumentHandler(object):

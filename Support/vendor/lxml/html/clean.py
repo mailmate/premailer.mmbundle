@@ -1,19 +1,24 @@
+# cython: language_level=2
+
 """A cleanup tool for HTML.
 
 Removes unwanted tags and content.  See the `Cleaner` class for
 details.
 """
 
+from __future__ import absolute_import
+
 import re
 import copy
 try:
     from urlparse import urlsplit
+    from urllib import unquote_plus
 except ImportError:
     # Python 3
-    from urllib.parse import urlsplit
+    from urllib.parse import urlsplit, unquote_plus
 from lxml import etree
 from lxml.html import defs
-from lxml.html import fromstring, tostring, XHTML_NAMESPACE
+from lxml.html import fromstring, XHTML_NAMESPACE
 from lxml.html import xhtml_to_html, _transform_result
 
 try:
@@ -26,11 +31,6 @@ try:
 except NameError:
     # Python 3
     unicode = str
-try:
-    bytes
-except NameError:
-    # Python < 2.6
-    bytes = str
 try:
     basestring
 except NameError:
@@ -95,6 +95,7 @@ _find_external_links = etree.XPath(
      "descendant-or-self::x:a[normalize-space(@href) and substring(normalize-space(@href),1,1) != '#']"),
     namespaces={'x':XHTML_NAMESPACE})
 
+
 class Cleaner(object):
     """
     Instances cleans the document of each of the possible offending
@@ -112,7 +113,10 @@ class Cleaner(object):
         Removes any comments.
 
     ``style``:
-        Removes any style tags or attributes.
+        Removes any style tags.
+
+    ``inline_style``
+        Removes any style attributes.  Defaults to the value of the ``style`` option.
 
     ``links``:
         Removes any ``<link>`` tags
@@ -191,6 +195,7 @@ class Cleaner(object):
     javascript = True
     comments = True
     style = False
+    inline_style = None
     links = True
     meta = True
     page_structure = True
@@ -207,7 +212,7 @@ class Cleaner(object):
     safe_attrs = defs.safe_attrs
     add_nofollow = False
     host_whitelist = ()
-    whitelist_tags = set(['iframe', 'embed'])
+    whitelist_tags = {'iframe', 'embed'}
 
     def __init__(self, **kw):
         for name, value in kw.items():
@@ -215,6 +220,8 @@ class Cleaner(object):
                 raise TypeError(
                     "Unknown parameter: %s=%r" % (name, value))
             setattr(self, name, value)
+        if self.inline_style is None and 'inline_style' not in kw:
+            self.inline_style = self.style
 
     # Used to lookup the primary URL for a given tag that is up for
     # removal:
@@ -280,9 +287,9 @@ class Cleaner(object):
                             del attrib[aname]
             doc.rewrite_links(self._remove_javascript_link,
                               resolve_base_href=False)
-            if not self.style:
-                # If we're deleting style then we don't have to remove JS links
-                # from styles, otherwise...
+            # If we're deleting style then we don't have to remove JS links
+            # from styles, otherwise...
+            if not self.inline_style:
                 for el in _find_styled_elements(doc):
                     old = el.get('style')
                     new = _css_javascript_re.sub('', old)
@@ -292,6 +299,7 @@ class Cleaner(object):
                         del el.attrib['style']
                     elif new != old:
                         el.set('style', new)
+            if not self.style:
                 for el in list(doc.iter('style')):
                     if el.get('type', '').lower().strip() == 'text/javascript':
                         el.drop_tree()
@@ -314,6 +322,7 @@ class Cleaner(object):
             kill_tags.add(etree.ProcessingInstruction)
         if self.style:
             kill_tags.add('style')
+        if self.inline_style:
             etree.strip_attributes(doc, 'style')
         if self.links:
             kill_tags.add('link')
@@ -423,6 +432,12 @@ class Cleaner(object):
         return False
 
     def allow_element(self, el):
+        """
+        Decide whether an element is configured to be accepted or rejected.
+
+        :param el: an element.
+        :return: true to accept the element or false to reject/discard it.
+        """
         if el.tag not in self._tag_link_attrs:
             return False
         attr = self._tag_link_attrs[el.tag]
@@ -441,8 +456,15 @@ class Cleaner(object):
             return self.allow_embedded_url(el, url)
 
     def allow_embedded_url(self, el, url):
-        if (self.whitelist_tags is not None
-            and el.tag not in self.whitelist_tags):
+        """
+        Decide whether a URL that was found in an element's attributes or text
+        if configured to be accepted or rejected.
+
+        :param el: an element.
+        :param url: a URL found on the element.
+        :return: true to accept the URL and false to reject it.
+        """
+        if self.whitelist_tags is not None and el.tag not in self.whitelist_tags:
             return False
         scheme, netloc, path, query, fragment = urlsplit(url)
         netloc = netloc.lower().split(':', 1)[0]
@@ -473,7 +495,7 @@ class Cleaner(object):
 
     def _remove_javascript_link(self, link):
         # links like "j a v a s c r i p t:" might be interpreted in IE
-        new = _substitute_whitespace('', link)
+        new = _substitute_whitespace('', unquote_plus(link))
         if _is_javascript_scheme(new):
             # FIXME: should this be None to delete?
             return ''
@@ -521,7 +543,7 @@ clean_html = clean.clean_html
 _link_regexes = [
     re.compile(r'(?P<body>https?://(?P<host>[a-z0-9._-]+)(?:/[/\-_.,a-z0-9%&?;=~]*)?(?:\([/\-_.,a-z0-9%&?;=~]*\))?)', re.I),
     # This is conservative, but autolinking can be a bit conservative:
-    re.compile(r'mailto:(?P<body>[a-z0-9._-]+@(?P<host>[a-z0-9_._]+[a-z]))', re.I),
+    re.compile(r'mailto:(?P<body>[a-z0-9._-]+@(?P<host>[a-z0-9_.-]+[a-z]))', re.I),
     ]
 
 _avoid_elements = ['textarea', 'pre', 'code', 'head', 'select', 'a']

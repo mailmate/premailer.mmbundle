@@ -6,15 +6,9 @@
 # and http://www.w3.org/community/webed/wiki/HTML/New_HTML5_Elements
 # for html5_tags.
 
-try:
-    frozenset
-except NameError:
-    from sets import Set as frozenset
-
-
 empty_tags = frozenset([
     'area', 'base', 'basefont', 'br', 'col', 'frame', 'hr',
-    'img', 'input', 'isindex', 'link', 'meta', 'param'])
+    'img', 'input', 'isindex', 'link', 'meta', 'param', 'source', 'track'])
 
 deprecated_tags = frozenset([
     'applet', 'basefont', 'center', 'dir', 'font', 'isindex',

@@ -1172,7 +1172,7 @@ class ExpressionValue(CSSFunction):
         return cssutils.ser.do_css_ExpressionValue(self)
 
     def _setCssText(self, cssText):
-        #self._log.warn(u'CSSValue: Unoffial and probably invalid MS value used!')
+        #self._log.warning(u'CSSValue: Unoffial and probably invalid MS value used!')
         return super(ExpressionValue, self)._setCssText(cssText)
 
     cssText = property(_getCssText, _setCssText,

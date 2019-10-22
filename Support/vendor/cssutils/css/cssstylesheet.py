@@ -254,7 +254,7 @@ class CSSStyleSheet(cssutils.stylesheets.StyleSheet):
                 rule = cssutils.css.MarginRule(parentStyleSheet=self)
                 rule.cssText = self._tokensupto2(tokenizer, token)
             else:
-                self._log.warn(u'CSSStylesheet: Unknown @rule found.',
+                self._log.warning(u'CSSStylesheet: Unknown @rule found.',
                                token, neverraise=True)
                 rule = cssutils.css.CSSUnknownRule(parentStyleSheet=self)
                 rule.cssText = self._tokensupto2(tokenizer, token)

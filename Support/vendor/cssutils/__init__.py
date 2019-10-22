@@ -93,7 +93,7 @@ __docformat__ = 'restructuredtext'
 __author__ = 'Christof Hoeke with contributions by Walter Doerwald'
 __date__ = '$LastChangedDate::                            $:'
 
-VERSION = '1.0.1'
+VERSION = '1.0.2'
 
 __version__ = '%s $Id$' % VERSION
 
@@ -159,15 +159,25 @@ class DOMImplementationCSS(object):
             SYNTAX_ERR: Raised if the specified media string value has a
             syntax error and is unparsable.
         """
+        import warnings
+        warning = ("Deprecated, see "
+                   "https://bitbucket.org/cthedot/cssutils/issues/69#comment-30669799")
+        warnings.warn(warning, DeprecationWarning)
         return css.CSSStyleSheet(title=title, media=media)
 
-    def createDocument(self, *args):
-        # not needed to HTML, also not for CSS?
-        raise NotImplementedError
+    def createDocument(self, *args, **kwargs):
+        # sometimes cssutils is picked automatically for
+        # xml.dom.getDOMImplementation, so we should provide an implementation
+        # see https://bitbucket.org/cthedot/cssutils/issues/69
+        import xml.dom.minidom as minidom
+        return minidom.DOMImplementation().createDocument(*args, **kwargs)
 
-    def createDocumentType(self, *args):
-        # not needed to HTML, also not for CSS?
-        raise NotImplementedError
+    def createDocumentType(self, *args, **kwargs):
+        # sometimes cssutils is picked automatically for
+        # xml.dom.getDOMImplementation, so we should provide an implementation
+        # see https://bitbucket.org/cthedot/cssutils/issues/69
+        import xml.dom.minidom as minidom
+        return minidom.DOMImplementation().createDocumentType(*args, **kwargs)
 
     def hasFeature(self, feature, version):
         return (feature.lower(), unicode(version)) in self._features
@@ -319,7 +329,7 @@ def resolveImports(sheet, target=None):
                     # nested imports
                     importedSheet = resolveImports(rule.styleSheet)
                 except xml.dom.HierarchyRequestErr, e:
-                    log.warn(u'@import: Cannot resolve target, keeping rule: %s'
+                    log.warning(u'@import: Cannot resolve target, keeping rule: %s'
                              % e, neverraise=True)
                     target.add(rule)
                 else:
@@ -344,7 +354,7 @@ def resolveImports(sheet, target=None):
                                 keepimport = True
                                 break
                         if keepimport:
-                            log.warn(u'Cannot combine imported sheet with'
+                            log.warning(u'Cannot combine imported sheet with'
                                      u' given media as other rules then'
                                      u' comments or stylerules found %r,'
                                      u' keeping %r' % (r,

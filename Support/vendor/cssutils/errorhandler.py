@@ -26,7 +26,7 @@ class _ErrorHandler(object):
     """
     handles all errors and log messages
     """
-    def __init__(self, log, defaultloglevel=logging.INFO, 
+    def __init__(self, log, defaultloglevel=logging.INFO,
                  raiseExceptions=True):
         """
         inits log if none given
@@ -42,7 +42,7 @@ class _ErrorHandler(object):
         """
         # may be disabled during setting of known valid items
         self.enabled = True
-        
+
         if log:
             self._log = log
         else:
@@ -53,12 +53,12 @@ class _ErrorHandler(object):
             hdlr.setFormatter(formatter)
             self._log.addHandler(hdlr)
             self._log.setLevel(defaultloglevel)
-            
+
         self.raiseExceptions = raiseExceptions
 
     def __getattr__(self, name):
         "use self._log items"
-        calls = ('debug', 'info', 'warn', 'error', 'critical', 'fatal')
+        calls = ('debug', 'info', 'warning', 'error', 'critical', 'fatal')
         other = ('setLevel', 'getEffectiveLevel', 'addHandler', 'removeHandler')
 
         if name in calls:
@@ -79,7 +79,7 @@ class _ErrorHandler(object):
         if self.enabled:
             if error is None:
                 error = xml.dom.SyntaxErr
-            
+
             line, col = None, None
             if token:
                 if isinstance(token, tuple):
@@ -88,11 +88,11 @@ class _ErrorHandler(object):
                     value, line, col = token.value, token.line, token.col
                 msg = u'%s [%s:%s: %s]' % (
                     msg, line, col, value)
-    
+
             if error and self.raiseExceptions and not neverraise:
                 if isinstance(error, urllib2.HTTPError) or isinstance(error, urllib2.URLError):
                     raise
-                elif issubclass(error, xml.dom.DOMException): 
+                elif issubclass(error, xml.dom.DOMException):
                     error.line = line
                     error.col = col
                 raise error(msg)

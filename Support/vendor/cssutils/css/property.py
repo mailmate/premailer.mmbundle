@@ -223,7 +223,7 @@ class Property(cssutils.util.Base):
             # validate
             if self._isValidating() and self._name not in cssutils.profile.knownNames:
                 # self.valid = False
-                self._log.warn(u'Property: Unknown Property name.',
+                self._log.warning(u'Property: Unknown Property name.',
                                token=token, neverraise=True)
             else:
                 pass
@@ -452,7 +452,7 @@ class Property(cssutils.util.Base):
             # TODO
 #            if cv.cssValueType == cv.CSS_VARIABLE and not cv.value:
 #                # TODO: false alarms too!
-#                cssutils.log.warn(u'No value for variable "%s" found, keeping '
+#                cssutils.log.warning(u'No value for variable "%s" found, keeping '
 #                                  u'variable.' % cv.name, neverraise=True)
 
             if self.name in cssutils.profile.knownNames:
@@ -475,7 +475,7 @@ class Property(cssutils.util.Base):
                         notvalidprofiles = u'/'.join(cssutils.profile.defaultProfiles)
                     else:
                         notvalidprofiles = profiles
-                    self._log.warn(u'Property: Not valid for profile "%s" '
+                    self._log.warning(u'Property: Not valid for profile "%s" '
                                    u'but valid "%s" value: %s '
                                    % (notvalidprofiles, u'/'.join(validprofiles),
                                       self.value),

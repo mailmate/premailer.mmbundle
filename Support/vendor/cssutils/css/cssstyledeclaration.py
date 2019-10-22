@@ -636,7 +636,7 @@ class CSSStyleDeclaration(CSS2Properties, cssutils.util.Base2):
             self.seq._readonly = True
 
         else:
-            self._log.warn(u'Invalid Property: %s: %s %s'
+            self._log.warning(u'Invalid Property: %s: %s %s'
                            % (name, value, priority))
 
     def item(self, index):

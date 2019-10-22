@@ -1,14 +1,26 @@
+from __future__ import absolute_import
 import cssutils
 import threading
 from operator import itemgetter
+
 try:
     from collections import OrderedDict
 except ImportError:  # pragma: no cover
     # some old python 2.6 thing then, eh?
     from ordereddict import OrderedDict
 
+from premailer.cache import function_cache
 
-def csstext_to_pairs(csstext):
+
+def format_value(prop):
+    if prop.priority == "important":
+        return prop.propertyValue.cssText.strip() + " !important"
+    else:
+        return prop.propertyValue.cssText.strip()
+
+
+@function_cache()
+def csstext_to_pairs(csstext, validate=True):
     """
     csstext_to_pairs takes css text and make it to list of
     tuple of key,value.
@@ -18,22 +30,17 @@ def csstext_to_pairs(csstext):
     with csstext_to_pairs._lock:
         return sorted(
             [
-                (prop.name.strip(), prop.propertyValue.cssText.strip())
-                for prop in cssutils.parseStyle(csstext)
+                (prop.name.strip(), format_value(prop))
+                for prop in cssutils.parseStyle(csstext, validate=validate)
             ],
-            key=itemgetter(0)
+            key=itemgetter(0),
         )
 
 
 csstext_to_pairs._lock = threading.RLock()
 
 
-def merge_styles(
-        inline_style,
-        new_styles,
-        classes,
-        remove_unset_properties=False
-):
+def merge_styles(inline_style, new_styles, classes, remove_unset_properties=False):
     """
         This will merge all new styles where the order is important
         The last one will override the first
@@ -54,7 +61,7 @@ def merge_styles(
             str: the final style
     """
     # building classes
-    styles = OrderedDict([('', OrderedDict())])
+    styles = OrderedDict([("", OrderedDict())])
     for pc in set(classes):
         styles[pc] = OrderedDict()
 
@@ -67,7 +74,7 @@ def merge_styles(
         # inline should be a declaration list as I understand
         # ie property-name:property-value;...
         for k, v in csstext_to_pairs(inline_style):
-            styles[''][k] = v
+            styles[""][k] = v
 
     normal_styles = []
     pseudo_styles = []
@@ -77,30 +84,27 @@ def merge_styles(
             # they effectively are the same as not saying anything about the
             # property when inlined
             kv = OrderedDict(
-                (k, v) for (k, v) in kv.items() if not v.lower() == 'unset'
+                (k, v) for (k, v) in kv.items() if not v.lower() == "unset"
             )
         if not kv:
             continue
         if pseudoclass:
             pseudo_styles.append(
-                '%s{%s}' % (
-                    pseudoclass,
-                    '; '.join('%s:%s' % (k, v) for k, v in kv.items())
-                )
+                "%s{%s}"
+                % (pseudoclass, "; ".join("%s:%s" % (k, v) for k, v in kv.items()))
             )
         else:
-            normal_styles.append('; '.join(
-                '%s:%s' % (k, v) for k, v in kv.items()
-            ))
+            normal_styles.append("; ".join("%s:%s" % (k, v) for k, v in kv.items()))
 
     if pseudo_styles:
         # if we do or code thing correct this should not happen
         # inline style definition: declarations without braces
         all_styles = (
-            (['{%s}' % ''.join(normal_styles)] + pseudo_styles)
-            if normal_styles else pseudo_styles
+            (["{%s}" % "".join(normal_styles)] + pseudo_styles)
+            if normal_styles
+            else pseudo_styles
         )
     else:
         all_styles = normal_styles
 
-    return ' '.join(all_styles).strip()
+    return " ".join(all_styles).strip()

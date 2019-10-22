@@ -47,7 +47,7 @@ def _defaultFetcher(url):
     try:
         r = urlfetch.fetch(url, method=urlfetch.GET)
     except urlfetch.Error, e:
-        log.warn(u'Error opening url=%r: %s' % (url, e),
+        log.warning(u'Error opening url=%r: %s' % (url, e),
                           error=IOError)
     else:
         if r.status_code == 200:
@@ -64,5 +64,5 @@ def _defaultFetcher(url):
             return encoding, r.content
         else:
             # TODO: 301 etc
-            log.warn(u'Error opening url=%r: HTTP status %s' % 
+            log.warning(u'Error opening url=%r: HTTP status %s' % 
                               (url, r.status_code), error=IOError)

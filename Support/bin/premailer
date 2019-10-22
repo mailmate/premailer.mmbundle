@@ -10,6 +10,6 @@ TMPFILE=$(mktemp -t premailer_data) || exit 1
 cat | perl -pe 's,</?o:[^>]*>,,g' >${TMPFILE}
 
 export PYTHONIOENCODING=utf-8
-if ! (cat ${TMPFILE} | "${MM_BUNDLE_SUPPORT}/vendor/premailerize") ; then
-	cat ${TMPFILE} | tidy --quiet yes --wrap 0 --input-encoding utf8 --output-encoding utf8 --force-output 1 --show-warnings no | "${MM_BUNDLE_SUPPORT}/vendor/premailerize"
+if ! (cat ${TMPFILE} | "${MM_BUNDLE_SUPPORT}/premailerize") ; then
+	cat ${TMPFILE} | tidy --quiet yes --wrap 0 --input-encoding utf8 --output-encoding utf8 --force-output 1 --show-warnings no | "${MM_BUNDLE_SUPPORT}/premailerize"
 fi
